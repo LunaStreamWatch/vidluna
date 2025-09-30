@@ -633,7 +633,7 @@ export default function VideoPlayer({
                 </div>
               </div>
 
-              <div className="text-white text-lg font-mono">
+              <div className="text-white text-lg" style={{ fontFamily: "Helvetica, Arial, sans-serif" }}>
                 {formatTime(currentTime)} / {formatTime(duration)}
               </div>
             </div>
