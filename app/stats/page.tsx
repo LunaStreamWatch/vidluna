@@ -8,6 +8,7 @@ export default function StatsPage() {
     bandwidthUsed: "0 GB",
     lastUpdated: new Date().toISOString(),
   }
+  // this isnt working yet.
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
