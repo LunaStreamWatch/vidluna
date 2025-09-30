@@ -115,13 +115,13 @@ export default function PlayerPage(props: PlayerPageProps) {
 
   const fetchTMDBData = useCallback(async () => {
     try {
-      console.log("[v0] Fetching TMDB data for:", { type, id, season, episode })
+      console.log("Fetching TMDB data for:", { type, id, season, episode })
 
       fetch("/api/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "tmdb" }),
-      }).catch((err) => console.error("[v0] Failed to track TMDB request:", err))
+      }).catch((err) => console.error("Failed to track TMDB request:", err))
 
       const params = new URLSearchParams({
         type,
@@ -143,15 +143,15 @@ export default function PlayerPage(props: PlayerPageProps) {
       if (type === "movie") {
         setMovieData(data)
         setBackdropUrl(data.backdrop_url)
-        console.log("[v0] Movie data loaded:", data.title)
+        console.log("Movie data loaded:", data.title)
       } else if (type === "tv") {
         setTvShowData(data.show)
         setEpisodeData(data.episode)
         setBackdropUrl(data.show.backdrop_url)
-        console.log("[v0] TV show data loaded:", data.show.name, data.episode?.name)
+        console.log("TV show data loaded:", data.show.name, data.episode?.name)
       }
     } catch (error: any) {
-      console.error("[v0] Failed to fetch TMDB data:", error)
+      console.error("Failed to fetch TMDB data:", error)
       if (type === "movie") {
         setMovieData({
           id: Number.parseInt(id),
@@ -176,14 +176,14 @@ export default function PlayerPage(props: PlayerPageProps) {
       setLoading(true)
       setError(null)
       try {
-        console.log(`[v0] Fetching stream from ${server} for:`, targetPath)
+        console.log(`Fetching stream from ${server} for:`, targetPath)
 
         const url = `/api/rainsubs?tmdbId=${id}&server=${server}${season ? `&season=${season}` : ""}${episode ? `&episode=${episode}` : ""}`
 
         const res = await fetch(url, { cache: "no-store" })
         const data = await res.json()
 
-        console.log(`[v0] ${server} response:`, data)
+        console.log(`${server} response:`, data)
 
         if (!res.ok || !data.success) {
           throw new Error(data.error || `API failed: ${res.status}`)
@@ -195,17 +195,17 @@ export default function PlayerPage(props: PlayerPageProps) {
 
         setHlsUrl(data.streamUrl)
         setCurrentServer(server)
-        console.log(`[v0] Stream URL set from ${server}:`, data.streamUrl)
+        console.log(`Stream URL set from ${server}:`, data.streamUrl)
       } catch (e: any) {
-        console.error(`[v0] ${server} fetch error:`, e)
+        console.error(`${server} fetch error:`, e)
 
         if (server === "veronica") {
-          console.log("[v0] Trying fallback server Vienna...")
+          console.log("Trying fallback server Vienna...")
           try {
             await fetchStream("vienna")
             return
           } catch (fallbackError) {
-            console.error("[v0] Both servers failed")
+            console.error("Both servers failed")
           }
         }
 
@@ -221,14 +221,14 @@ export default function PlayerPage(props: PlayerPageProps) {
     try {
       const showName = type === "tv" ? tvShowData?.name || "TV Show" : movieData?.title || "Movie"
       console.log(
-        `[v0] Requesting ${showName} subtitles for ${type === "movie" ? "movie" : `season ${season || 1} episode ${episode || 1}`} with tmdb id ${id}`,
+        `Requesting ${showName} subtitles for ${type === "movie" ? "movie" : `season ${season || 1} episode ${episode || 1}`} with tmdb id ${id}`,
       )
 
       fetch("/api/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "wyzie" }),
-      }).catch((err) => console.error("[v0] Failed to track Wyzie request:", err))
+      }).catch((err) => console.error("Failed to track Wyzie request:", err))
 
       const wyzieUrl =
         type === "movie"
@@ -262,9 +262,9 @@ export default function PlayerPage(props: PlayerPageProps) {
 
       const allSubs = [...englishSubs, ...otherSubs, rainsubsPlaceholder]
       setSubs(allSubs)
-      console.log("[v0] Loaded subtitles:", allSubs.length)
+      console.log("Loaded subtitles:", allSubs.length)
     } catch (error) {
-      console.error("[v0] Failed to fetch subtitles:", error)
+      console.error("Failed to fetch subtitles:", error)
       setSubs([])
     }
   }, [id, type, season, episode, tvShowData?.name, movieData?.title])
@@ -277,20 +277,20 @@ export default function PlayerPage(props: PlayerPageProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "rainsubs" }),
-      }).catch((err) => console.error("[v0] Failed to track RainSubs request:", err))
+      }).catch((err) => console.error("Failed to track RainSubs request:", err))
 
       const rainsubsUrl =
         type === "movie"
           ? `/api/rainsubs-proxy?tmdbId=${id}`
           : `/api/rainsubs-proxy?tmdbId=${id}&season=${season ?? 1}&episode=${episode ?? 1}`
 
-      console.log("[v0] Fetching rainsubs from proxy:", rainsubsUrl)
+      console.log("Fetching rainsubs from proxy:", rainsubsUrl)
 
       const response = await fetch(rainsubsUrl)
       const srtText = await response.text()
 
       if (srtText && srtText.length > 10) {
-        console.log("[v0] Successfully loaded RainSubs subtitles")
+        console.log("Successfully loaded RainSubs subtitles")
 
         const utf8Bytes = new TextEncoder().encode(srtText)
         let binaryString = ""
@@ -306,11 +306,11 @@ export default function PlayerPage(props: PlayerPageProps) {
         )
         setRainsubsLoaded(true)
       } else {
-        console.log("[v0] No RainSubs subtitles available")
+        console.log("No RainSubs subtitles available")
         setSubs((prevSubs) => prevSubs.filter((sub) => sub.id !== "rainsubs"))
       }
     } catch (error) {
-      console.error("[v0] Failed to fetch RainSubs:", error)
+      console.error("Failed to fetch RainSubs:", error)
       setSubs((prevSubs) => prevSubs.filter((sub) => sub.id !== "rainsubs"))
     }
   }, [id, type, season, episode, rainsubsLoaded])
@@ -348,7 +348,7 @@ export default function PlayerPage(props: PlayerPageProps) {
         const cues = parseVttToCues(vtt)
         setVttCues(cues)
       } catch (error) {
-        console.error("[v0] Failed to load subtitle:", error)
+        console.error("Failed to load subtitle:", error)
         setVttCues([])
       }
     },
@@ -368,7 +368,7 @@ export default function PlayerPage(props: PlayerPageProps) {
       const previousServer = currentServer
 
       try {
-        console.log(`[v0] Switching to ${server} server...`)
+        console.log(`Switching to ${server} server...`)
 
         const url = `/api/rainsubs?tmdbId=${id}&server=${server}${season ? `&season=${season}` : ""}${episode ? `&episode=${episode}` : ""}`
 
@@ -383,9 +383,9 @@ export default function PlayerPage(props: PlayerPageProps) {
         setCurrentServer(server)
         setError(null)
 
-        console.log(`[v0] Successfully switched to ${server}:`, data.streamUrl)
+        console.log(`Successfully switched to ${server}:`, data.streamUrl)
       } catch (e: any) {
-        console.error(`[v0] Failed to switch to ${server}:`, e)
+        console.error(`Failed to switch to ${server}:`, e)
 
         setError(`${server} server unavailable. Reverting to ${previousServer}.`)
         setTimeout(() => setError(null), 3000)
@@ -424,7 +424,7 @@ export default function PlayerPage(props: PlayerPageProps) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "show-loaded" }),
-    }).catch((err) => console.error("[v0] Failed to track show load:", err))
+    }).catch((err) => console.error("Failed to track show load:", err))
   }, [fetchTMDBData, fetchStream])
 
   useEffect(() => {

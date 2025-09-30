@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
       headers: { "content-type": "application/json" },
     })
   } catch (error: any) {
-    console.error("[v0] TMDB API error:", error)
+    console.error("TMDB API error:", error)
     return new Response(
       JSON.stringify({
         error: error.message || "Failed to fetch TMDB data",

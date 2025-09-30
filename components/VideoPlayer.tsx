@@ -159,29 +159,41 @@ export default function VideoPlayer({
             lowLatencyMode: true,
             maxBufferLength: 30,
             maxMaxBufferLength: 600,
+            fragLoadingTimeOut: 20000, // Increase fragment loading timeout to 20 seconds
+            manifestLoadingTimeOut: 10000, // Increase manifest loading timeout to 10 seconds
+            levelLoadingTimeOut: 10000, // Increase level loading timeout to 10 seconds
+            fragLoadingMaxRetry: 3, // Retry fragment loading up to 3 times
+            manifestLoadingMaxRetry: 3, // Retry manifest loading up to 3 times
+            levelLoadingMaxRetry: 3, // Retry level loading up to 3 times
+            fragLoadingMaxRetryTimeout: 20000, // Max retry timeout for fragments
+            manifestLoadingMaxRetryTimeout: 10000, // Max retry timeout for manifest
+            levelLoadingMaxRetryTimeout: 10000, // Max retry timeout for levels
+            startLevel: -1, // Auto-select starting quality
+            testBandwidth: true, // Enable bandwidth testing
+            backBufferLength: 90, // Keep more content in buffer
           })
 
           hls.loadSource(src)
           hls.attachMedia(video)
 
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            console.log("[v0] HLS manifest loaded")
+            console.log("HLS manifest loaded")
           })
 
           hls.on(Hls.Events.ERROR, (event, data) => {
-            console.error("[v0] HLS error:", data)
+            console.error("HLS error:", data)
             if (data.fatal) {
               switch (data.type) {
                 case Hls.ErrorTypes.NETWORK_ERROR:
-                  console.log("[v0] Fatal network error, trying to recover...")
+                  console.log("Fatal network error, trying to recover...")
                   hls.startLoad()
                   break
                 case Hls.ErrorTypes.MEDIA_ERROR:
-                  console.log("[v0] Fatal media error, trying to recover...")
+                  console.log("Fatal media error, trying to recover...")
                   hls.recoverMediaError()
                   break
                 default:
-                  console.log("[v0] Fatal error, destroying HLS...")
+                  console.log("Fatal error, destroying HLS...")
                   hls.destroy()
                   break
               }
@@ -194,7 +206,7 @@ export default function VideoPlayer({
         }
       })
       .catch((error) => {
-        console.error("[v0] Failed to load HLS.js:", error)
+        console.error("Failed to load HLS.js:", error)
         video.src = src
       })
   }, [src])
@@ -202,7 +214,7 @@ export default function VideoPlayer({
   useEffect(() => {
     if (autoPlay && videoRef.current) {
       videoRef.current.play().catch((error) => {
-        console.error("[v0] Auto-play error:", error)
+        console.error("Auto-play error:", error)
       })
     }
   }, [autoPlay])
@@ -312,7 +324,7 @@ export default function VideoPlayer({
       video.pause()
     } else {
       video.play().catch((error) => {
-        console.error("[v0] Play error:", error)
+        console.error("Play error:", error)
       })
     }
   }, [playing])
@@ -336,7 +348,7 @@ export default function VideoPlayer({
       const newTime = Math.max(0, Math.min(currentVideoTime + seconds, duration))
       video.currentTime = newTime
       console.log(
-        `[v0] Seeking ${seconds > 0 ? "forward" : "backward"} ${Math.abs(seconds)}s from ${currentVideoTime.toFixed(1)}s to ${newTime.toFixed(1)}s`,
+        `Seeking ${seconds > 0 ? "forward" : "backward"} ${Math.abs(seconds)}s from ${currentVideoTime.toFixed(1)}s to ${newTime.toFixed(1)}s`,
       )
     },
     [duration],
@@ -411,7 +423,7 @@ export default function VideoPlayer({
 
     if (!document.fullscreenElement) {
       container.requestFullscreen().catch((error) => {
-        console.error("[v0] Fullscreen error:", error)
+        console.error("Fullscreen error:", error)
       })
     } else {
       document.exitFullscreen()

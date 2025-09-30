@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         : `https://rainsubs.com/api/subtitles?tmdbId=${tmdbId}`
 
       try {
-        console.log(`[v0] Fetching rainsubs from:`, subtitleUrl)
+        console.log(`Fetching rainsubs from:`, subtitleUrl)
         const subResponse = await fetch(subtitleUrl, {
           cache: "no-store",
           headers: {
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
         if (subResponse.ok) {
           const subtitleText = await subResponse.text()
-          console.log(`[v0] Rainsubs response length:`, subtitleText.length)
+          console.log(`Rainsubs response length:`, subtitleText.length)
 
           return new Response(
             JSON.stringify({
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
           throw new Error(`Rainsubs API failed: ${subResponse.status}`)
         }
       } catch (subError: any) {
-        console.error("[v0] Rainsubs fetch failed:", subError)
+        console.error("Rainsubs fetch failed:", subError)
         return new Response(
           JSON.stringify({
             error: subError.message || "Failed to fetch rainsubs",
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
       scrapeUrl = `https://scrape.lordflix.club/api/scrape?url=https://vidlink.pro${targetPath.startsWith("/") ? targetPath : `/${targetPath}`}&waitFor=.m3u8`
     }
 
-    console.log(`[v0] Scraping ${server} URL:`, scrapeUrl)
+    console.log(`Scraping ${server} URL:`, scrapeUrl)
 
     const response = await fetch(scrapeUrl, {
       cache: "no-store",
@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await response.json()
-    console.log(`[v0] ${server} scrape response:`, data)
+    console.log(`${server} scrape response:`, data)
 
     // Extract m3u8 URL from the requests
     const m3u8Url = (data?.requests as any[])
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
       throw new Error(`No HLS stream found from ${server}`)
     }
 
-    console.log(`[v0] Found m3u8 URL from ${server}:`, m3u8Url)
+    console.log(`Found m3u8 URL from ${server}:`, m3u8Url)
 
     return new Response(
       JSON.stringify({
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
       },
     )
   } catch (error: any) {
-    console.error(`[v0] ${server} API error:`, error)
+    console.error(`${server} API error:`, error)
     return new Response(
       JSON.stringify({
         error: error.message || `Failed to fetch stream from ${server}`,

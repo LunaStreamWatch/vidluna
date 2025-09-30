@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       rainsubsUrl += `&season=${season}&episode=${episode}`
     }
 
-    console.log("[v0] Proxying RainSubs request:", rainsubsUrl)
+    console.log("Proxying RainSubs request:", rainsubsUrl)
 
     // Fetch from RainSubs API server-side to bypass CORS
     const response = await fetch(rainsubsUrl, {
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error("[v0] RainSubs proxy error:", error)
+    console.error("RainSubs proxy error:", error)
     return NextResponse.json({ error: error.message || "Failed to fetch subtitles" }, { status: 500 })
   }
 }
