@@ -186,16 +186,28 @@ export default function VideoPlayer({
               switch (data.type) {
                 case Hls.ErrorTypes.NETWORK_ERROR:
                   console.log("Fatal network error, trying to recover...")
-                  hls.startLoad()
+                  setTimeout(() => {
+                    hls.startLoad()
+                  }, 1000)
                   break
                 case Hls.ErrorTypes.MEDIA_ERROR:
                   console.log("Fatal media error, trying to recover...")
-                  hls.recoverMediaError()
+                  setTimeout(() => {
+                    hls.recoverMediaError()
+                  }, 1000)
                   break
                 default:
                   console.log("Fatal error, destroying HLS...")
                   hls.destroy()
                   break
+              }
+            } else {
+              // Non-fatal errors - try to recover
+              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                console.log("Non-fatal network error, retrying...")
+                setTimeout(() => {
+                  hls.startLoad()
+                }, 2000)
               }
             }
           })

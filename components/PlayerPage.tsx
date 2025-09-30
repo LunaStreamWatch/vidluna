@@ -29,7 +29,7 @@ type VttCue = {
   lines: string[]
 }
 
-type Server = "veronica" | "vienna"
+type Server = "veronica" | "vienna" | "backup1" | "backup2"
 
 export default function PlayerPage(props: PlayerPageProps) {
   const { type, id, season, episode } = props
@@ -61,7 +61,10 @@ export default function PlayerPage(props: PlayerPageProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const [currentServer, setCurrentServer] = useState<Server>("veronica")
+  const [availableServers, setAvailableServers] = useState<Server[]>(["veronica", "vienna"])
   const [isServerSwitching, setIsServerSwitching] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
+  const [maxRetries] = useState(3)
 
   const [movieData, setMovieData] = useState<TMDBMovie | null>(null)
   const [tvShowData, setTvShowData] = useState<TMDBTVShow | null>(null)
@@ -195,21 +198,35 @@ export default function PlayerPage(props: PlayerPageProps) {
 
         setHlsUrl(data.streamUrl)
         setCurrentServer(server)
+        setRetryCount(0) // Reset retry count on success
         console.log(`Stream URL set from ${server}:`, data.streamUrl)
       } catch (e: any) {
         console.error(`${server} fetch error:`, e)
 
-        if (server === "veronica") {
-          console.log("Trying fallback server Vienna...")
+        // Try all available servers as fallbacks
+        const fallbackServers = availableServers.filter(s => s !== server)
+        for (const fallbackServer of fallbackServers) {
           try {
-            await fetchStream("vienna")
+            console.log(`Trying fallback server ${fallbackServer}...`)
+            await fetchStream(fallbackServer)
             return
           } catch (fallbackError) {
-            console.error("Both servers failed")
+            console.error(`${fallbackServer} fallback failed:`, fallbackError)
+            continue
           }
         }
+        console.error("All servers failed")
 
-        setError(e?.message ?? "Failed to load stream from both servers")
+        if (retryCount < maxRetries) {
+          console.log(`Retrying in 3 seconds... (${retryCount + 1}/${maxRetries})`)
+          setRetryCount(prev => prev + 1)
+          setTimeout(() => {
+            fetchStream()
+          }, 3000)
+          return
+        }
+
+        setError(e?.message ?? `Failed to load stream from all servers after ${maxRetries} retries. Tried: ${availableServers.join(", ")}`)
       } finally {
         setLoading(false)
       }
@@ -387,7 +404,7 @@ export default function PlayerPage(props: PlayerPageProps) {
       } catch (e: any) {
         console.error(`Failed to switch to ${server}:`, e)
 
-        setError(`${server} server unavailable. Reverting to ${previousServer}.`)
+        setError(`${server} server unavailable. Reverting to ${previousServer}. Available servers: ${availableServers.join(", ")}`)
         setTimeout(() => setError(null), 3000)
       } finally {
         setIsServerSwitching(false)
@@ -466,7 +483,9 @@ export default function PlayerPage(props: PlayerPageProps) {
   const servers = [
     { id: "veronica", name: "Veronica", flag: "🇺🇸" },
     { id: "vienna", name: "Vienna", flag: "🇺🇸" },
-  ]
+    { id: "backup1", name: "Backup 1", flag: "🇺🇸" },
+    { id: "backup2", name: "Backup 2", flag: "🇺🇸" },
+  ].filter(server => availableServers.includes(server.id as Server))
 
   const subtitleOptions = subs.map((sub) => ({
     id: sub.id,
