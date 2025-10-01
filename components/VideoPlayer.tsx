@@ -2,23 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import type React from "react"
 
-import {
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Settings,
-  Maximize,
-  SkipBack,
-  SkipForward,
-  X,
-  Subtitles,
-  Minimize,
-  Plus,
-  Minus,
-  Cloud,
-  ChevronRight,
-} from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Settings, Maximize, SkipBack, SkipForward, X, Files as Subtitles, Minimize, Plus, Minus, Cloud, ChevronRight } from "lucide-react"
 
 type VideoPlayerProps = {
   src: string

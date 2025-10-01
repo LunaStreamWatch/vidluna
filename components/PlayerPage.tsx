@@ -1,6 +1,6 @@
 "use client"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Loader2, AlertCircle, Play } from "lucide-react"
+import { Loader as Loader2, CircleAlert as AlertCircle, Play } from "lucide-react"
 import { useSearchParams, useRouter } from "next/navigation"
 import VideoPlayer from "./VideoPlayer"
 import type { TMDBMovie, TMDBTVShow, TMDBTVEpisode } from "@/lib/tmdb"
