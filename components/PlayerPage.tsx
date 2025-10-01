@@ -29,7 +29,7 @@ type VttCue = {
   lines: string[]
 }
 
-type Server = "veronica" | "vienna" | "backup1" | "backup2"
+type Server = "ven" | "veronica" | "vienna"
 
 export default function PlayerPage(props: PlayerPageProps) {
   const { type, id, season, episode } = props
@@ -60,8 +60,8 @@ export default function PlayerPage(props: PlayerPageProps) {
   const [hasStartedPlaying, setHasStartedPlaying] = useState(urlAutoplay) // Start playing if autoplay is enabled
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  const [currentServer, setCurrentServer] = useState<Server>("veronica")
-  const [availableServers, setAvailableServers] = useState<Server[]>(["veronica", "vienna"])
+  const [currentServer, setCurrentServer] = useState<Server>("ven")
+  const [availableServers, setAvailableServers] = useState<Server[]>(["ven", "veronica", "vienna"])
   const [isServerSwitching, setIsServerSwitching] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const [maxRetries] = useState(3)
@@ -481,10 +481,9 @@ export default function PlayerPage(props: PlayerPageProps) {
   }
 
   const servers = [
+    { id: "ven", name: "Ven", flag: "🇺🇸" },
     { id: "veronica", name: "Veronica", flag: "🇺🇸" },
     { id: "vienna", name: "Vienna", flag: "🇺🇸" },
-    { id: "backup1", name: "Backup 1", flag: "🇺🇸" },
-    { id: "backup2", name: "Backup 2", flag: "🇺🇸" },
   ].filter(server => availableServers.includes(server.id as Server))
 
   const subtitleOptions = subs.map((sub) => ({

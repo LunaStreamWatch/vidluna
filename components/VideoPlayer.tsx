@@ -155,22 +155,25 @@ export default function VideoPlayer({
       .then(({ default: Hls }) => {
         if (Hls.isSupported()) {
           const hls = new Hls({
-            enableWorker: false,
+            enableWorker: true,
             lowLatencyMode: true,
             maxBufferLength: 30,
             maxMaxBufferLength: 600,
-            fragLoadingTimeOut: 20000, // Increase fragment loading timeout to 20 seconds
-            manifestLoadingTimeOut: 10000, // Increase manifest loading timeout to 10 seconds
-            levelLoadingTimeOut: 10000, // Increase level loading timeout to 10 seconds
-            fragLoadingMaxRetry: 3, // Retry fragment loading up to 3 times
-            manifestLoadingMaxRetry: 3, // Retry manifest loading up to 3 times
-            levelLoadingMaxRetry: 3, // Retry level loading up to 3 times
-            fragLoadingMaxRetryTimeout: 20000, // Max retry timeout for fragments
-            manifestLoadingMaxRetryTimeout: 10000, // Max retry timeout for manifest
-            levelLoadingMaxRetryTimeout: 10000, // Max retry timeout for levels
-            startLevel: -1, // Auto-select starting quality
-            testBandwidth: true, // Enable bandwidth testing
-            backBufferLength: 90, // Keep more content in buffer
+            fragLoadingTimeOut: 30000,
+            manifestLoadingTimeOut: 15000,
+            levelLoadingTimeOut: 15000,
+            fragLoadingMaxRetry: 5,
+            manifestLoadingMaxRetry: 5,
+            levelLoadingMaxRetry: 5,
+            fragLoadingMaxRetryTimeout: 30000,
+            manifestLoadingMaxRetryTimeout: 15000,
+            levelLoadingMaxRetryTimeout: 15000,
+            startLevel: -1,
+            testBandwidth: true,
+            backBufferLength: 90,
+            xhrSetup: function (xhr: any, url: string) {
+              xhr.withCredentials = false
+            },
           })
 
           hls.loadSource(src)
@@ -497,7 +500,7 @@ export default function VideoPlayer({
     >
       <video
         ref={videoRef}
-        className="w-full h-full object-cover cursor-pointer"
+        className="w-full h-full object-contain cursor-pointer"
         poster={poster}
         onTimeUpdate={handleTimeUpdate}
         onDurationChange={handleDurationChange}
@@ -508,7 +511,7 @@ export default function VideoPlayer({
         crossOrigin="anonymous"
         preload="metadata"
         autoPlay={autoPlay}
-        muted={initialMuted} // Set muted attribute from prop
+        muted={initialMuted}
       />
 
       {activeSubtitle && showSubtitleOverlay && selectedSubtitle && (
