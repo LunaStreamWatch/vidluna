@@ -39,6 +39,42 @@ export async function GET(req: NextRequest) {
     }
 
     const contentType = response.headers.get("content-type") || "application/vnd.apple.mpegurl"
+
+    if (contentType.includes("mpegurl") || contentType.includes("m3u")) {
+      const text = await response.text()
+      const baseUrl = new URL(url)
+      const basePath = baseUrl.pathname.substring(0, baseUrl.pathname.lastIndexOf("/") + 1)
+
+      const rewrittenContent = text
+        .split("\n")
+        .map((line) => {
+          if (line.startsWith("#") || line.trim() === "") {
+            return line
+          }
+
+          if (line.startsWith("http://") || line.startsWith("https://")) {
+            const proxiedUrl = `/api/stream-proxy?url=${encodeURIComponent(line.trim())}`
+            return proxiedUrl
+          }
+
+          const fullUrl = `${baseUrl.origin}${basePath}${line.trim()}`
+          const proxiedUrl = `/api/stream-proxy?url=${encodeURIComponent(fullUrl)}`
+          return proxiedUrl
+        })
+        .join("\n")
+
+      return new NextResponse(rewrittenContent, {
+        status: 200,
+        headers: {
+          "Content-Type": contentType,
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      })
+    }
+
     const content = await response.arrayBuffer()
 
     return new NextResponse(content, {
