@@ -11,13 +11,25 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const origin = url.includes("spectraflux") || url.includes("vidfast")
+      ? "https://vidfast.pro"
+      : url.includes("vidlink")
+        ? "https://vidlink.pro"
+        : "https://player.videasy.net"
+
+    const referer = url.includes("spectraflux") || url.includes("vidfast")
+      ? "https://vidfast.pro/"
+      : url.includes("vidlink")
+        ? "https://vidlink.pro/"
+        : "https://player.videasy.net/"
+
     const response = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Accept": "*/*",
         "Accept-Language": "en-US,en;q=0.9",
-        "Origin": "https://player.vidplus.to",
-        "Referer": "https://player.vidplus.to/",
+        "Origin": origin,
+        "Referer": referer,
       },
       cache: "no-store",
     })
