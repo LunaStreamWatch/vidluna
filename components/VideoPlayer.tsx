@@ -130,11 +130,6 @@ export default function VideoPlayer({
     const video = videoRef.current
     if (!video || !src) return
 
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = src
-      return
-    }
-
     import("hls.js")
       .then(({ default: Hls }) => {
         if (Hls.isSupported()) {
@@ -157,6 +152,8 @@ export default function VideoPlayer({
             backBufferLength: 90,
             xhrSetup: function (xhr: any, url: string) {
               xhr.withCredentials = false
+              // Add CORS headers for cross-origin requests
+              xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
             },
           })
 
@@ -202,11 +199,17 @@ export default function VideoPlayer({
           return () => {
             hls.destroy()
           }
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          // Fallback to native HLS support (Safari)
+          video.src = src
         }
       })
       .catch((error) => {
         console.error("Failed to load HLS.js:", error)
-        video.src = src
+        // Fallback to native video element
+        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = src
+        }
       })
   }, [src])
 

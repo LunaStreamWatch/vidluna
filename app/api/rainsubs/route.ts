@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
           })
 
           if (validM3u8Url) {
-            m3u8Url = `/api/stream-proxy?url=${encodeURIComponent(validM3u8Url)}`
+            m3u8Url = validM3u8Url
             console.log(`Found m3u8 URL from ${attempt.name}, proxying through:`, m3u8Url)
             break
           }
@@ -185,7 +185,7 @@ export async function GET(req: NextRequest) {
           })
 
           if (validM3u8Url) {
-            m3u8Url = `/api/stream-proxy?url=${encodeURIComponent(validM3u8Url)}`
+            m3u8Url = validM3u8Url
             console.log(`Found m3u8 URL from ${attempt.name}, proxying through:`, m3u8Url)
             break
           }
@@ -244,7 +244,7 @@ export async function GET(req: NextRequest) {
           })
 
           if (validM3u8Url) {
-            m3u8Url = `/api/stream-proxy?url=${encodeURIComponent(validM3u8Url)}`
+            m3u8Url = validM3u8Url
             console.log(`Found m3u8 URL from ${attempt.name}, proxying through:`, m3u8Url)
             break
           }
