@@ -42,24 +42,38 @@ export async function GET(req: NextRequest) {
 
     if (contentType.includes("mpegurl") || contentType.includes("m3u")) {
       const text = await response.text()
-      const baseUrl = new URL(url)
-      const basePath = baseUrl.pathname.substring(0, baseUrl.pathname.lastIndexOf("/") + 1)
+      const parsedUrl = new URL(url)
+      
+      // Get the base URL without the filename
+      const pathParts = parsedUrl.pathname.split('/')
+      pathParts.pop() // Remove the filename
+      const basePath = pathParts.join('/') + '/'
 
       const rewrittenContent = text
         .split("\n")
         .map((line) => {
-          if (line.startsWith("#") || line.trim() === "") {
+          const trimmedLine = line.trim()
+          
+          // Skip comments and empty lines
+          if (trimmedLine.startsWith("#") || trimmedLine === "") {
             return line
           }
 
-          if (line.startsWith("http://") || line.startsWith("https://")) {
-            const proxiedUrl = `/api/stream-proxy?url=${encodeURIComponent(line.trim())}`
+          // If it's already a full URL, proxy it
+          if (trimmedLine.startsWith("http://") || trimmedLine.startsWith("https://")) {
+            const proxiedUrl = `/api/stream-proxy?url=${encodeURIComponent(trimmedLine)}`
             return proxiedUrl
           }
 
-          const fullUrl = `${baseUrl.origin}${basePath}${line.trim()}`
-          const proxiedUrl = `/api/stream-proxy?url=${encodeURIComponent(fullUrl)}`
-          return proxiedUrl
+          // Handle relative URLs
+          if (trimmedLine) {
+            // Construct the full URL properly
+            const fullUrl = `${parsedUrl.protocol}//${parsedUrl.host}${basePath}${trimmedLine}`
+            const proxiedUrl = `/api/stream-proxy?url=${encodeURIComponent(fullUrl)}`
+            return proxiedUrl
+          }
+
+          return line
         })
         .join("\n")
 
