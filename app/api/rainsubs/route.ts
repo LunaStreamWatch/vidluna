@@ -27,8 +27,8 @@ export async function GET(req: NextRequest) {
 
     if (server === "ven") {
       const vidplusUrl = isTv
-        ? `https://player.vidplus.to/embed/tv/${tmdbId}/${season}/${episode}?autoplay=true`
-        : `https://player.vidplus.to/embed/movie/${tmdbId}?autoplay=true`
+        ? `https://player.vidplus.to/embed/tv/${tmdbId}/${season}/${episode}?autoplay=true&server=1`
+        : `https://player.vidplus.to/embed/movie/${tmdbId}?autoplay=true&server=1`
 
       const scrapingAttempts = [
         {

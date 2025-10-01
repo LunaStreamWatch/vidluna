@@ -39,8 +39,16 @@ export default function PlayerPage(props: PlayerPageProps) {
   const urlColor = searchParams.get("color")
   const urlAutoplay = searchParams.get("autoplay") === "true"
   const urlMuted = searchParams.get("muted") === "true"
+  const urlServerParam = searchParams.get("server")
 
   const initialColor = urlColor ? `#${urlColor}` : "#fbc9ff"
+
+  const getInitialServer = (): Server => {
+    if (urlServerParam === "1") return "ven"
+    if (urlServerParam === "2") return "veronica"
+    if (urlServerParam === "3") return "vienna"
+    return "ven"
+  }
 
   const [accentColor, setAccentColor] = useState(initialColor)
   const [subtitleColor, setSubtitleColor] = useState("#ffffff")
@@ -60,7 +68,7 @@ export default function PlayerPage(props: PlayerPageProps) {
   const [hasStartedPlaying, setHasStartedPlaying] = useState(urlAutoplay) // Start playing if autoplay is enabled
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  const [currentServer, setCurrentServer] = useState<Server>("ven")
+  const [currentServer, setCurrentServer] = useState<Server>(getInitialServer())
   const [availableServers, setAvailableServers] = useState<Server[]>(["ven", "veronica", "vienna"])
   const [isServerSwitching, setIsServerSwitching] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
@@ -104,17 +112,17 @@ export default function PlayerPage(props: PlayerPageProps) {
     const currentEpisode = Number.parseInt(episode ?? "1")
     const nextEpisode = currentEpisode + 1
 
-    // Build URL with current parameters
     const params = new URLSearchParams()
     if (urlColor) params.set("color", urlColor)
     if (urlAutoplay) params.set("autoplay", "true")
     if (urlMuted) params.set("muted", "true")
+    if (urlServerParam) params.set("server", urlServerParam)
 
     const queryString = params.toString()
     const newUrl = `/embed/tv/${id}/${currentSeason}/${nextEpisode}${queryString ? `?${queryString}` : ""}`
 
     router.push(newUrl)
-  }, [hasNextEpisode, season, episode, id, urlColor, urlAutoplay, urlMuted, router])
+  }, [hasNextEpisode, season, episode, id, urlColor, urlAutoplay, urlMuted, urlServerParam, router])
 
   const fetchTMDBData = useCallback(async () => {
     try {
@@ -466,8 +474,9 @@ export default function PlayerPage(props: PlayerPageProps) {
   const getTitle = () => {
     if (type === "tv") {
       const showName = tvShowData?.name || "TV Show"
+      const episodeName = episodeData?.name || ""
       const seasonEpisode = `S${season ?? 1}E${episode ?? 1}`
-      return `${showName} - ${seasonEpisode}`
+      return episodeName ? `${showName} - ${seasonEpisode} - ${episodeName}` : `${showName} - ${seasonEpisode}`
     }
     return movieData?.title || "Movie"
   }
@@ -496,18 +505,10 @@ export default function PlayerPage(props: PlayerPageProps) {
 
   if (loading) {
     return (
-      <div className="relative w-full h-screen bg-black overflow-hidden">
-        {backdropUrl && (
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${backdropUrl})` }} />
-        )}
-        <div className="absolute inset-0 bg-black/60" />
-
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-8">
-          <div className="mb-8">
-            <Loader2 className="w-16 h-16 text-white animate-spin mx-auto" />
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-4 text-balance">{getTitle()}</h1>
-          <p className="text-xl text-gray-300 mb-6">Preparing your viewing experience...</p>
+      <div className="relative w-full h-screen bg-black overflow-hidden flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-16 h-16 text-white animate-spin mx-auto mb-4" />
+          <p className="text-white text-lg">Loading...</p>
         </div>
       </div>
     )
