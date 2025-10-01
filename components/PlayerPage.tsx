@@ -506,9 +506,35 @@ export default function PlayerPage(props: PlayerPageProps) {
   if (loading) {
     return (
       <div className="relative w-full h-screen bg-black overflow-hidden flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-16 h-16 text-white animate-spin mx-auto mb-4" />
-          <p className="text-white text-lg">Loading...</p>
+        {backdropUrl && (
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${backdropUrl})`,
+              filter: "blur(20px)",
+              transform: "scale(1.1)",
+            }}
+          />
+        )}
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative text-center">
+          <div className="relative inline-block mb-6">
+            <svg className="w-20 h-20 animate-spin" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke={accentColor}
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray="251.2"
+                strokeDashoffset="62.8"
+              />
+            </svg>
+          </div>
+          <p className="text-white text-xl font-medium">Loading {getTitle()}</p>
+          <p className="text-gray-400 text-sm mt-2">Fetching stream from {currentServer}...</p>
         </div>
       </div>
     )

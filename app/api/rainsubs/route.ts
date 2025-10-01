@@ -26,18 +26,14 @@ export async function GET(req: NextRequest) {
     let lastError: string | null = null
 
     if (server === "ven") {
-      const vidplusUrl = isTv
-        ? `https://player.vidplus.to/embed/tv/${tmdbId}/${season}/${episode}?autoplay=true&server=4`
-        : `https://player.vidplus.to/embed/movie/${tmdbId}?autoplay=true&server=4`
+      const vidfastUrl = isTv
+        ? `https://vidfast.pro/tv/${tmdbId}/${season}/${episode}?autoplay=true`
+        : `https://vidfast.pro/movie/${tmdbId}?autoplay=true`
 
       const scrapingAttempts = [
         {
-          name: "ven-vidplus-main",
-          url: `https://scrape.lordflix.club/api/scrape?url=${encodeURIComponent(vidplusUrl)}&waitFor=${encodeURIComponent(".m3u8")}`,
-        },
-        {
-          name: "ven-vidplus-alt",
-          url: `https://scrape.lordflix.club/api/scrape?url=${encodeURIComponent(vidplusUrl)}`,
+          name: "ven-vidfast",
+          url: `https://scrape.lordflix.club/api/scrape?url=${encodeURIComponent(vidfastUrl)}&waitFor=${encodeURIComponent(".m3u8")}`,
         },
       ]
 
@@ -115,8 +111,8 @@ export async function GET(req: NextRequest) {
           })
 
           if (validM3u8Url) {
-            m3u8Url = `/api/stream-proxy?url=${encodeURIComponent(validM3u8Url)}`
-            console.log(`Found m3u8 URL from ${attempt.name}, proxying through:`, m3u8Url)
+            m3u8Url = validM3u8Url
+            console.log(`Found m3u8 URL from ${attempt.name}:`, m3u8Url)
             break
           }
         } catch (error: any) {

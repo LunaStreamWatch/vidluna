@@ -93,12 +93,12 @@ export default function DocsPage() {
                     <td className="p-4">
                       <code>server</code>
                     </td>
-                    <td className="p-4">Preferred server</td>
+                    <td className="p-4">Preferred server (1=Ven, 2=Veronica, 3=Vienna)</td>
                     <td className="p-4">
-                      <code>?server=vienna</code>
+                      <code>?server=1</code>
                     </td>
                     <td className="p-4">
-                      <code>veronica</code>
+                      <code>1</code>
                     </td>
                   </tr>
                 </tbody>
@@ -127,14 +127,57 @@ export default function DocsPage() {
                 <h3 className="text-lg font-medium mb-4">Responsive TV Show Embed</h3>
                 <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
                   <code>{`<div style="position: relative; padding-bottom: 56.25%; height: 0;">
-  <iframe 
-    src="/embed/tv/1434/1/1?color=3b82f6&autoplay=true" 
+  <iframe
+    src="/embed/tv/1434/1/1?color=3b82f6&autoplay=true"
     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
     frameborder="0"
     allowfullscreen>
   </iframe>
 </div>`}</code>
                 </pre>
+              </div>
+
+              <div className="bg-card border rounded-lg p-6">
+                <h3 className="text-lg font-medium mb-4">Using Specific Server</h3>
+                <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                  <code>{`<iframe
+  src="/embed/movie/550?server=1&autoplay=true"
+  width="100%"
+  height="500"
+  frameborder="0"
+  allowfullscreen>
+</iframe>`}</code>
+                </pre>
+              </div>
+            </div>
+          </section>
+
+          {/* Server Information */}
+          <section>
+            <h2 className="text-2xl font-semibold mb-6">Available Servers</h2>
+            <div className="grid gap-6">
+              <div className="bg-card border rounded-lg p-6">
+                <h3 className="text-lg font-medium mb-4">Server 1: Ven (Default)</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Primary streaming server powered by vidfast.pro
+                </p>
+                <code className="bg-muted px-3 py-2 rounded text-sm block">?server=1</code>
+              </div>
+
+              <div className="bg-card border rounded-lg p-6">
+                <h3 className="text-lg font-medium mb-4">Server 2: Veronica</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Secondary streaming server from videasy.net
+                </p>
+                <code className="bg-muted px-3 py-2 rounded text-sm block">?server=2</code>
+              </div>
+
+              <div className="bg-card border rounded-lg p-6">
+                <h3 className="text-lg font-medium mb-4">Server 3: Vienna</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Tertiary streaming server from vidlink.pro
+                </p>
+                <code className="bg-muted px-3 py-2 rounded text-sm block">?server=3</code>
               </div>
             </div>
           </section>
@@ -153,7 +196,7 @@ export default function DocsPage() {
               <div className="bg-card border rounded-lg p-6">
                 <h3 className="text-lg font-medium mb-3">🌍 Multiple Servers</h3>
                 <p className="text-sm text-muted-foreground">
-                  Veronica (US) and Vienna (Austria) with automatic failover
+                  Three streaming servers (Ven, Veronica, Vienna) with automatic failover
                 </p>
               </div>
 
