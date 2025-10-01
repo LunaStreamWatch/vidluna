@@ -150,11 +150,6 @@ export default function VideoPlayer({
             startLevel: -1,
             testBandwidth: true,
             backBufferLength: 90,
-            xhrSetup: function (xhr: any, url: string) {
-              xhr.withCredentials = false
-              // Add CORS headers for cross-origin requests
-              xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
-            },
           })
 
           hls.loadSource(src)
