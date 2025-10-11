@@ -29,7 +29,7 @@ type VttCue = {
   lines: string[]
 }
 
-type Server = "ven" | "veronica" | "vienna"
+type Server = "ven" | "vienna"
 
 export default function PlayerPage(props: PlayerPageProps) {
   const { type, id, season, episode } = props
@@ -45,8 +45,7 @@ export default function PlayerPage(props: PlayerPageProps) {
 
   const getInitialServer = (): Server => {
     if (urlServerParam === "1") return "ven"
-    if (urlServerParam === "2") return "veronica"
-    if (urlServerParam === "3") return "vienna"
+    if (urlServerParam === "2") return "vienna"
     return "ven"
   }
 
@@ -69,7 +68,7 @@ export default function PlayerPage(props: PlayerPageProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const [currentServer, setCurrentServer] = useState<Server>(getInitialServer())
-  const [availableServers, setAvailableServers] = useState<Server[]>(["ven", "veronica", "vienna"])
+  const [availableServers, setAvailableServers] = useState<Server[]>(["ven", "vienna"])
   const [isServerSwitching, setIsServerSwitching] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const [maxRetries] = useState(3)
@@ -189,7 +188,7 @@ export default function PlayerPage(props: PlayerPageProps) {
       try {
         console.log(`Fetching stream from ${server} for:`, targetPath)
 
-        const url = `/api/rainsubs?tmdbId=${id}&server=${server}${season ? `&season=${season}` : ""}${episode ? `&episode=${episode}` : ""}`
+        const url = `/api/stream-proxy?type=${type}&id=${id}&server=${server}${season ? `&season=${season}` : ""}${episode ? `&episode=${episode}` : ""}`
 
         const res = await fetch(url, { cache: "no-store" })
         const data = await res.json()
@@ -386,7 +385,7 @@ export default function PlayerPage(props: PlayerPageProps) {
   }
 
   const switchServer = useCallback(
-    async (server: Server) => {
+    async (server: string) => {
       if (server === currentServer || isServerSwitching) return
 
       setIsServerSwitching(true)
@@ -395,7 +394,7 @@ export default function PlayerPage(props: PlayerPageProps) {
       try {
         console.log(`Switching to ${server} server...`)
 
-        const url = `/api/rainsubs?tmdbId=${id}&server=${server}${season ? `&season=${season}` : ""}${episode ? `&episode=${episode}` : ""}`
+        const url = `/api/stream-proxy?type=${type}&id=${id}&server=${server}${season ? `&season=${season}` : ""}${episode ? `&episode=${episode}` : ""}`
 
         const res = await fetch(url, { cache: "no-store" })
         const data = await res.json()
@@ -405,7 +404,7 @@ export default function PlayerPage(props: PlayerPageProps) {
         }
 
         setHlsUrl(data.streamUrl)
-        setCurrentServer(server)
+        setCurrentServer(server as Server)
         setError(null)
 
         console.log(`Successfully switched to ${server}:`, data.streamUrl)
@@ -491,7 +490,6 @@ export default function PlayerPage(props: PlayerPageProps) {
 
   const servers = [
     { id: "ven", name: "Ven", flag: "🇺🇸" },
-    { id: "veronica", name: "Veronica", flag: "🇺🇸" },
     { id: "vienna", name: "Vienna", flag: "🇺🇸" },
   ].filter(server => availableServers.includes(server.id as Server))
 

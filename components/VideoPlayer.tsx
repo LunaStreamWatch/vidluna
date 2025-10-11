@@ -94,6 +94,12 @@ export default function VideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<"speed" | "display" | "subtitles">("speed")
   const [showCursor, setShowCursor] = useState(true) // Add cursor hiding state
+  const [hoverTime, setHoverTime] = useState<number | null>(null)
+  const [showHoverTime, setShowHoverTime] = useState(false)
+  const [isBuffering, setIsBuffering] = useState(false)
+  const [seekingTime, setSeekingTime] = useState<number | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragTimeRef = useRef<number | null>(null)
 
   const handleVideoClick = useCallback(() => {
     togglePlay()
@@ -127,6 +133,38 @@ export default function VideoPlayer({
   }, [showSettings, showServerMenu, showSubtitleMenu])
 
   useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const progressBar = document.querySelector('[data-progress-bar]') as HTMLElement
+      if (!progressBar) return
+
+      const rect = progressBar.getBoundingClientRect()
+      const clickX = e.clientX - rect.left
+      const newTime = (clickX / rect.width) * duration
+      const clampedTime = Math.max(0, Math.min(newTime, duration))
+      dragTimeRef.current = clampedTime
+      setSeekingTime(clampedTime)
+    }
+
+    const handleMouseUp = () => {
+      if (dragTimeRef.current !== null) {
+        seekTo(dragTimeRef.current)
+      }
+      dragTimeRef.current = null
+      setIsDragging(false)
+    }
+
+    document.addEventListener("mousemove", handleMouseMove)
+    document.addEventListener("mouseup", handleMouseUp)
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove)
+      document.removeEventListener("mouseup", handleMouseUp)
+    }
+  }, [isDragging, duration, seekingTime])
+
+  useEffect(() => {
     const video = videoRef.current
     if (!video || !src) return
 
@@ -136,8 +174,8 @@ export default function VideoPlayer({
           const hls = new Hls({
             enableWorker: true,
             lowLatencyMode: true,
-            maxBufferLength: 30,
-            maxMaxBufferLength: 600,
+            maxBufferLength: 120,
+            maxMaxBufferLength: 1200,
             fragLoadingTimeOut: 30000,
             manifestLoadingTimeOut: 15000,
             levelLoadingTimeOut: 15000,
@@ -149,7 +187,9 @@ export default function VideoPlayer({
             levelLoadingMaxRetryTimeout: 15000,
             startLevel: -1,
             testBandwidth: true,
-            backBufferLength: 90,
+            backBufferLength: 1200,
+            maxBufferSize: 60 * 1000 * 1000, // 60MB
+            maxBufferHole: 0.5,
           })
 
           hls.loadSource(src)
@@ -286,6 +326,7 @@ export default function VideoPlayer({
 
     const time = video.currentTime
     setCurrentTime(time)
+    setSeekingTime(null) // Clear seeking time when video updates
     onTimeUpdate?.(time)
 
     if (video.buffered.length > 0) {
@@ -331,7 +372,9 @@ export default function VideoPlayer({
       const video = videoRef.current
       if (!video) return
 
-      video.currentTime = Math.max(0, Math.min(time, duration))
+      const clampedTime = Math.max(0, Math.min(time, duration))
+      setSeekingTime(clampedTime)
+      video.currentTime = clampedTime
     },
     [duration],
   )
@@ -489,6 +532,9 @@ export default function VideoPlayer({
         onPlay={handlePlay}
         onPause={handlePause}
         onLoadedMetadata={handleDurationChange}
+        onWaiting={() => setIsBuffering(true)}
+        onCanPlay={() => setIsBuffering(false)}
+        onSeeked={() => setIsBuffering(false)}
         onClick={handleVideoClick}
         crossOrigin="anonymous"
         preload="metadata"
@@ -539,26 +585,70 @@ export default function VideoPlayer({
       <div
         className={`absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"}`}
       >
-        <div className="absolute bottom-0 left-0 right-0 p-6">
+        <div className="absolute bottom-0 left-0 right-0 p-4">
           {/* Progress Bar */}
           <div className="mb-6">
-            <div className="relative h-2 bg-white/20 rounded-full cursor-pointer group" onClick={handleSeek}>
+            <div
+              data-progress-bar
+              className="relative h-3 bg-white/20 rounded-full cursor-pointer group overflow-visible"
+              onMouseDown={(e) => {
+                setIsDragging(true)
+                const rect = e.currentTarget.getBoundingClientRect()
+                const clickX = e.clientX - rect.left
+                const newTime = (clickX / rect.width) * duration
+                const clampedTime = Math.max(0, Math.min(newTime, duration))
+                dragTimeRef.current = clampedTime
+                setSeekingTime(clampedTime)
+              }}
+              onMouseMove={(e) => {
+                if (isDragging) return
+                const rect = e.currentTarget.getBoundingClientRect()
+                const hoverX = e.clientX - rect.left
+                const hoverPercent = hoverX / rect.width
+                const time = hoverPercent * duration
+                setHoverTime(time)
+                setShowHoverTime(true)
+              }}
+              onMouseLeave={() => {
+                if (!isDragging) setShowHoverTime(false)
+              }}
+            >
               <div
                 className="absolute top-0 left-0 h-full bg-white/40 rounded-full"
                 style={{ width: `${buffered}%` }}
               />
               <div
-                className="absolute top-0 left-0 h-full rounded-full"
-                style={{ width: `${(currentTime / duration) * 100}%`, backgroundColor: accentColor }}
+                className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-transparent to-white/60"
+                style={{
+                  width: `${((dragTimeRef.current ?? seekingTime ?? currentTime) / duration) * 100}%`,
+                  backgroundColor: accentColor,
+                  boxShadow: `0 0 10px ${accentColor}40`
+                }}
               />
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg border-2 border-white"
                 style={{
-                  left: `${(currentTime / duration) * 100}%`,
-                  marginLeft: "-10px",
+                  left: `${((dragTimeRef.current ?? seekingTime ?? currentTime) / duration) * 100}%`,
+                  marginLeft: "-8px",
                   backgroundColor: accentColor,
                 }}
               />
+              {isBuffering && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white/50 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+              {showHoverTime && hoverTime !== null && (
+                <div
+                  className="absolute -top-8 px-2 py-1 bg-black/80 text-white text-xs rounded whitespace-nowrap pointer-events-none"
+                  style={{
+                    left: `${(hoverTime / duration) * 100}%`,
+                    transform: 'translateX(-50%)',
+                  }}
+                >
+                  {formatTime(hoverTime)}
+                </div>
+              )}
             </div>
           </div>
 
@@ -619,7 +709,7 @@ export default function VideoPlayer({
               </div>
 
               <div className="text-white text-lg" style={{ fontFamily: "Helvetica, Arial, sans-serif" }}>
-                {formatTime(currentTime)} / {formatTime(duration)}
+                {formatTime(dragTimeRef.current ?? seekingTime ?? currentTime)} / {formatTime(duration)}
               </div>
             </div>
 

@@ -27,6 +27,7 @@ export interface TMDBTVShow {
   vote_count: number
   number_of_seasons: number
   number_of_episodes: number
+  seasons?: { season_number: number; episode_count: number }[]
 }
 
 export interface TMDBTVEpisode {
