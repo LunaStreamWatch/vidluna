@@ -189,11 +189,11 @@ export async function GET(request: NextRequest) {
       const data = await response.json()
       console.log("Scraper data:", data)
 
-      // Return the m3u8 URL directly without proxying
+      // Return the m3u8 URL as a proxied URL to handle CORS in production
       const isTv = type === "tv"
       return NextResponse.json({
         success: true,
-        streamUrl: data.m3u8,
+        streamUrl: `/api/stream-proxy?url=${encodeURIComponent(data.m3u8)}`,
         server: server,
         metadata: {
           tmdbId: id,
