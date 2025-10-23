@@ -63,15 +63,33 @@ export default function VideoPlayer({
   selectedSubtitle,
   onSubtitleSelect,
   showSubtitleOverlay = false,
-  subtitleColor = "#ffffff",
+  subtitleColor = (() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('videoPlayer_subtitleColor')
+      return saved || "#ffffff"
+    }
+    return "#ffffff"
+  })(),
   onSubtitleColorChange,
-  subtitleSettings = {
-    fontSize: 24,
-    fontFamily: "Verdana", // Changed default font to Verdana
-    backgroundColor: "#000000",
-    backgroundOpacity: 0,
-    timing: 0,
-  },
+  subtitleSettings = (() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('videoPlayer_subtitleSettings')
+      return saved ? JSON.parse(saved) : {
+        fontSize: 24,
+        fontFamily: "Verdana",
+        backgroundColor: "#000000",
+        backgroundOpacity: 0,
+        timing: 0,
+      }
+    }
+    return {
+      fontSize: 24,
+      fontFamily: "Verdana",
+      backgroundColor: "#000000",
+      backgroundOpacity: 0,
+      timing: 0,
+    }
+  })(),
   onSubtitleSettingsChange,
   activeSubtitle = null,
 }: VideoPlayerProps) {
@@ -82,14 +100,32 @@ export default function VideoPlayer({
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [volume, setVolume] = useState(1)
-  const [muted, setMuted] = useState(initialMuted) // Initialize with prop value
+  const [volume, setVolume] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('videoPlayer_volume')
+      return saved ? Number(saved) : 1
+    }
+    return 1
+  })
+  const [muted, setMuted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('videoPlayer_muted')
+      return saved ? JSON.parse(saved) : initialMuted
+    }
+    return initialMuted
+  })
   const [showControls, setShowControls] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showServerMenu, setShowServerMenu] = useState(false)
   const [showSubtitleMenu, setShowSubtitleMenu] = useState(false)
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
-  const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1)
+  const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('videoPlayer_playbackRate')
+      return saved ? Number(saved) as PlaybackSpeed : 1
+    }
+    return 1
+  })
   const [buffered, setBuffered] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<"speed" | "display" | "subtitles">("speed")
@@ -99,7 +135,7 @@ export default function VideoPlayer({
   const [isBuffering, setIsBuffering] = useState(false)
   const [seekingTime, setSeekingTime] = useState<number | null>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const dragTimeRef = useRef<number | null>(null)
+  const [dragTime, setDragTime] = useState<number | null>(null)
 
   const handleVideoClick = useCallback(() => {
     togglePlay()
@@ -108,9 +144,26 @@ export default function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current
     if (video) {
-      video.muted = initialMuted
+      video.muted = muted
+      video.volume = volume
+      video.playbackRate = playbackRate
     }
-  }, [initialMuted])
+  }, [muted, volume, playbackRate])
+
+  // Set initial time when video loads
+  useEffect(() => {
+    const video = videoRef.current
+    if (video && src && typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`videoPlayer_progress_${src}`)
+      if (saved && Number(saved) > 0) {
+        const handleLoadedMetadata = () => {
+          video.currentTime = Number(saved)
+        }
+        video.addEventListener('loadedmetadata', handleLoadedMetadata)
+        return () => video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      }
+    }
+  }, [src])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -143,15 +196,19 @@ export default function VideoPlayer({
       const clickX = e.clientX - rect.left
       const newTime = (clickX / rect.width) * duration
       const clampedTime = Math.max(0, Math.min(newTime, duration))
-      dragTimeRef.current = clampedTime
+      setDragTime(clampedTime)
       setSeekingTime(clampedTime)
     }
 
     const handleMouseUp = () => {
-      if (dragTimeRef.current !== null) {
-        seekTo(dragTimeRef.current)
+      if (dragTime !== null) {
+        seekTo(dragTime)
+        // Save progress immediately after dragging
+        if (src && dragTime > 0) {
+          localStorage.setItem(`videoPlayer_progress_${src}`, dragTime.toString())
+        }
       }
-      dragTimeRef.current = null
+      setDragTime(null)
       setIsDragging(false)
     }
 
@@ -320,6 +377,47 @@ export default function VideoPlayer({
     }
   }, [showControls, showSettings, showServerMenu, showSubtitleMenu])
 
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.textContent = `
+      .settings-scrollbar::-webkit-scrollbar {
+        width: 6px !important;
+      }
+      .settings-scrollbar::-webkit-scrollbar-track {
+        background: transparent !important;
+      }
+      .settings-scrollbar::-webkit-scrollbar-thumb {
+        background: ${accentColor}40 !important;
+        border-radius: 3px !important;
+      }
+      .settings-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: ${accentColor}60 !important;
+      }
+      .settings-button {
+        background-color: ${accentColor}20 !important;
+      }
+      .settings-button:hover {
+        background-color: ${accentColor}40 !important;
+      }
+      .settings-input {
+        background-color: ${accentColor}20 !important;
+        border-color: ${accentColor}40 !important;
+      }
+      .settings-input:focus {
+        border-color: ${accentColor} !important;
+      }
+      .settings-text {
+        color: ${accentColor} !important;
+      }
+    `
+    document.head.appendChild(style)
+    return () => {
+      if (document.head.contains(style)) {
+        document.head.removeChild(style)
+      }
+    }
+  }, [accentColor])
+
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current
     if (!video) return
@@ -334,6 +432,17 @@ export default function VideoPlayer({
       setBuffered((bufferedEnd / video.duration) * 100)
     }
   }, [onTimeUpdate])
+
+  // Save progress periodically during playback
+  useEffect(() => {
+    if (!src || currentTime <= 0) return
+
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem(`videoPlayer_progress_${src}`, currentTime.toString())
+    }, 1000) // Save every 1 second
+
+    return () => clearTimeout(timeoutId)
+  }, [currentTime, src])
 
   const handleDurationChange = useCallback(() => {
     const video = videoRef.current
@@ -400,8 +509,12 @@ export default function VideoPlayer({
       const clickX = e.clientX - rect.left
       const newTime = (clickX / rect.width) * duration
       seekTo(newTime)
+      // Save progress immediately after seeking
+      if (src && newTime > 0) {
+        localStorage.setItem(`videoPlayer_progress_${src}`, newTime.toString())
+      }
     },
-    [duration, seekTo],
+    [duration, seekTo, src],
   )
 
   const toggleMute = useCallback(() => {
@@ -410,6 +523,7 @@ export default function VideoPlayer({
 
     video.muted = !video.muted
     setMuted(video.muted)
+    localStorage.setItem('videoPlayer_muted', video.muted.toString())
   }, [])
 
   const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -419,13 +533,16 @@ export default function VideoPlayer({
     const newVolume = Number.parseFloat(e.target.value)
     video.volume = newVolume
     setVolume(newVolume)
+    localStorage.setItem('videoPlayer_volume', newVolume.toString())
 
     if (newVolume === 0) {
       video.muted = true
       setMuted(true)
+      localStorage.setItem('videoPlayer_muted', 'true')
     } else if (video.muted) {
       video.muted = false
       setMuted(false)
+      localStorage.setItem('videoPlayer_muted', 'false')
     }
   }, [])
 
@@ -437,13 +554,16 @@ export default function VideoPlayer({
       const newVolume = Math.max(0, Math.min(1, volume + delta))
       video.volume = newVolume
       setVolume(newVolume)
+      localStorage.setItem('videoPlayer_volume', newVolume.toString())
 
       if (newVolume === 0) {
         video.muted = true
         setMuted(true)
+        localStorage.setItem('videoPlayer_muted', 'true')
       } else if (video.muted) {
         video.muted = false
         setMuted(false)
+        localStorage.setItem('videoPlayer_muted', 'false')
       }
     },
     [volume],
@@ -455,6 +575,7 @@ export default function VideoPlayer({
 
     video.playbackRate = rate
     setPlaybackRate(rate)
+    localStorage.setItem('videoPlayer_playbackRate', rate.toString())
   }, [])
 
   const toggleFullscreen = useCallback(() => {
@@ -498,6 +619,7 @@ export default function VideoPlayer({
   const handleSubtitleSettingChange = (key: string, value: any) => {
     const newSettings = { ...subtitleSettings, [key]: value }
     onSubtitleSettingsChange?.(newSettings)
+    localStorage.setItem('videoPlayer_subtitleSettings', JSON.stringify(newSettings))
   }
 
   const adjustTiming = (delta: number) => {
@@ -535,12 +657,18 @@ export default function VideoPlayer({
         onWaiting={() => setIsBuffering(true)}
         onCanPlay={() => setIsBuffering(false)}
         onSeeked={() => setIsBuffering(false)}
-        onClick={handleVideoClick}
+        onDoubleClick={toggleFullscreen}
         crossOrigin="anonymous"
         preload="metadata"
         autoPlay={autoPlay}
         muted={initialMuted}
       />
+
+      {isBuffering && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
+          <div className="w-20 h-20 border-4 rounded-full animate-spin" style={{ borderColor: accentColor, borderTopColor: 'transparent' }}></div>
+        </div>
+      )}
 
       {activeSubtitle && showSubtitleOverlay && selectedSubtitle && (
         <div
@@ -597,7 +725,7 @@ export default function VideoPlayer({
                 const clickX = e.clientX - rect.left
                 const newTime = (clickX / rect.width) * duration
                 const clampedTime = Math.max(0, Math.min(newTime, duration))
-                dragTimeRef.current = clampedTime
+                setDragTime(clampedTime)
                 setSeekingTime(clampedTime)
               }}
               onMouseMove={(e) => {
@@ -620,24 +748,19 @@ export default function VideoPlayer({
               <div
                 className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-transparent to-white/60"
                 style={{
-                  width: `${((dragTimeRef.current ?? seekingTime ?? currentTime) / duration) * 100}%`,
+                  width: `${((dragTime ?? seekingTime ?? currentTime) / duration) * 100}%`,
                   backgroundColor: accentColor,
                   boxShadow: `0 0 10px ${accentColor}40`
                 }}
               />
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg border-2 border-white"
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full opacity-100 transition-all duration-200 shadow-lg border-2 border-white"
                 style={{
-                  left: `${((dragTimeRef.current ?? seekingTime ?? currentTime) / duration) * 100}%`,
+                  left: `${((dragTime ?? seekingTime ?? currentTime) / duration) * 100}%`,
                   marginLeft: "-8px",
                   backgroundColor: accentColor,
                 }}
               />
-              {isBuffering && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white/50 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              )}
               {showHoverTime && hoverTime !== null && (
                 <div
                   className="absolute -top-8 px-2 py-1 bg-black/80 text-white text-xs rounded whitespace-nowrap pointer-events-none"
@@ -709,7 +832,7 @@ export default function VideoPlayer({
               </div>
 
               <div className="text-white text-lg" style={{ fontFamily: "Helvetica, Arial, sans-serif" }}>
-                {formatTime(dragTimeRef.current ?? seekingTime ?? currentTime)} / {formatTime(duration)}
+                {formatTime(dragTime ?? seekingTime ?? currentTime)} / {formatTime(duration)}
               </div>
             </div>
 
@@ -781,7 +904,11 @@ export default function VideoPlayer({
                   {showSubtitleMenu && (
                     <div
                       data-subtitle-menu
-                      className="absolute bottom-full right-0 mb-2 bg-black/95 backdrop-blur-sm rounded-lg p-6 min-w-96 max-h-[500px] overflow-y-auto shadow-2xl border border-white/10"
+                      className="absolute bottom-full right-0 mb-2 bg-black/95 backdrop-blur-sm rounded-lg p-6 min-w-96 max-h-[500px] overflow-y-auto shadow-2xl border border-white/10 settings-scrollbar"
+                      style={{
+                        ['--scrollbar-color' as any]: accentColor + '40',
+                        ['--scrollbar-hover-color' as any]: accentColor + '60'
+                      }}
                     >
                       <div className="text-white text-2xl font-medium mb-6">Subtitles</div>
                       <button
@@ -884,7 +1011,11 @@ export default function VideoPlayer({
           </div>
 
           {/* Settings Content */}
-          <div className="overflow-y-auto max-h-80">
+          <div className="overflow-y-auto max-h-80 settings-scrollbar"
+style={{
+  ['--scrollbar-color' as any]: accentColor + '40',
+  ['--scrollbar-hover-color' as any]: accentColor + '60'
+}}>
             {settingsTab === "speed" && (
               <div>
                 <h4 className="text-white text-sm font-medium mb-3">Playback Speed</h4>
@@ -998,7 +1129,10 @@ export default function VideoPlayer({
                     ].map((color) => (
                       <button
                         key={color}
-                        onClick={() => onSubtitleColorChange?.(color)}
+                        onClick={() => {
+                          onSubtitleColorChange?.(color)
+                          localStorage.setItem('videoPlayer_subtitleColor', color)
+                        }}
                         className={`w-8 h-8 rounded-lg border-2 hover:scale-110 transition-transform ${subtitleColor === color ? "border-white shadow-lg" : "border-gray-600"}`}
                         style={{ backgroundColor: color }}
                       />
@@ -1033,7 +1167,7 @@ export default function VideoPlayer({
                     }
                     className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer"
                   />
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="text-xs text-gray-400 mt-1 settings-text">
                     {Math.round(subtitleSettings.backgroundOpacity * 100)}%
                   </div>
                 </div>
@@ -1043,7 +1177,7 @@ export default function VideoPlayer({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => adjustTiming(-0.1)}
-                      className="p-1 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                      className="p-1 bg-white/10 rounded-lg hover:bg-white/20 transition-colors settings-button"
                     >
                       <Minus size={14} className="text-white" />
                     </button>
@@ -1052,11 +1186,11 @@ export default function VideoPlayer({
                       step="0.1"
                       value={subtitleSettings.timing}
                       onChange={(e) => handleSubtitleSettingChange("timing", Number.parseFloat(e.target.value) || 0)}
-                      className="flex-1 bg-white/10 text-white rounded-lg px-2 py-1 text-sm text-center border border-white/20"
+                      className="flex-1 bg-white/10 text-white rounded-lg px-2 py-1 text-sm text-center border border-white/20 settings-input"
                     />
                     <button
                       onClick={() => adjustTiming(0.1)}
-                      className="p-1 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                      className="p-1 bg-white/10 rounded-lg hover:bg-white/20 transition-colors settings-button"
                     >
                       <Plus size={14} className="text-white" />
                     </button>

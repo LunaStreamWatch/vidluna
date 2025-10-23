@@ -162,16 +162,29 @@ export async function GET(request: NextRequest) {
 
       console.log("Fetching from scraper:", scraperUrl)
 
-      const response = await fetch(scraperUrl, {
+      // Retry function for scraper requests
+      const fetchWithRetry = async (url: string, options: RequestInit, retries: number = 3) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const response = await fetch(url, options)
+            if (!response.ok) {
+              throw new Error(`Scraper HTTP ${response.status}: ${response.statusText}`)
+            }
+            return response
+          } catch (error: any) {
+            if (i === retries - 1) throw error
+            console.log(`Scraper retry ${i + 1}/${retries} after error:`, error.message)
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
+          }
+        }
+      }
+
+      const response = await fetchWithRetry(scraperUrl, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
           "Accept": "application/json",
         },
-      })
-
-      if (!response.ok) {
-        throw new Error(`Scraper HTTP ${response.status}: ${response.statusText}`)
-      }
+      }) as Response
 
       const data = await response.json()
       console.log("Scraper data:", data)

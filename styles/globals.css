@@ -122,4 +122,23 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Custom scrollbar styles for settings */
+  .settings-scrollbar::-webkit-scrollbar {
+    width: 6px !important;
+  }
+  .settings-scrollbar::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  .settings-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-color, rgba(255, 255, 255, 0.2)) !important;
+    border-radius: 3px !important;
+  }
+  .settings-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-hover-color, rgba(255, 255, 255, 0.4)) !important;
+  }
+  .settings-scrollbar {
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--scrollbar-color, rgba(255, 255, 255, 0.2)) transparent !important;
+  }
 }
