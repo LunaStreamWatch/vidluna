@@ -31,7 +31,13 @@ export async function GET(request: NextRequest) {
       }
 
       if (hostParam) {
-        additionalHeaders['Host'] = hostParam
+        // Extract hostname from URL if it's a full URL
+        try {
+          const hostUrl = new URL(hostParam)
+          additionalHeaders['Host'] = hostUrl.hostname
+        } catch {
+          additionalHeaders['Host'] = hostParam
+        }
       }
 
       // Remove headers and host params from the URL for fetching
@@ -46,6 +52,8 @@ export async function GET(request: NextRequest) {
           "Accept-Language": "en-US,en;q=0.9",
           "Cache-Control": "no-cache",
           "Pragma": "no-cache",
+          "Referer": "https://videostr.net/",
+          "Origin": "https://videostr.net",
           ...additionalHeaders,
         },
       })
