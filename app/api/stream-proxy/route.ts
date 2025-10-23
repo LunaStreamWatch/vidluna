@@ -16,13 +16,37 @@ export async function GET(request: NextRequest) {
     try {
       console.log("Proxying request to:", url)
 
-      const response = await fetch(url, {
+      // Parse additional headers from URL query params and clean the URL
+      const urlObj = new URL(url)
+      const headersParam = urlObj.searchParams.get('headers')
+      const hostParam = urlObj.searchParams.get('host')
+      let additionalHeaders: Record<string, string> = {}
+
+      if (headersParam) {
+        try {
+          additionalHeaders = JSON.parse(decodeURIComponent(headersParam))
+        } catch (e) {
+          console.warn('Failed to parse headers param:', e)
+        }
+      }
+
+      if (hostParam) {
+        additionalHeaders['Host'] = hostParam
+      }
+
+      // Remove headers and host params from the URL for fetching
+      urlObj.searchParams.delete('headers')
+      urlObj.searchParams.delete('host')
+      const cleanUrl = urlObj.toString()
+
+      const response = await fetch(cleanUrl, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
           "Accept": "*/*",
           "Accept-Language": "en-US,en;q=0.9",
           "Cache-Control": "no-cache",
           "Pragma": "no-cache",
+          ...additionalHeaders,
         },
       })
 
@@ -37,7 +61,7 @@ export async function GET(request: NextRequest) {
         // Handle m3u8 playlist files
         const text = await response.text()
         const lines = text.split("\n")
-        const baseUrl = new URL(url)
+        const baseUrl = new URL(cleanUrl)
         const basePath = baseUrl.pathname.substring(0, baseUrl.pathname.lastIndexOf("/") + 1)
 
         const modifiedLines = lines.map((line) => {
@@ -52,12 +76,18 @@ export async function GET(request: NextRequest) {
           if (!trimmedLine.startsWith("http")) {
             // Construct the full URL
             const fullUrl = `${baseUrl.protocol}//${baseUrl.host}${basePath}${trimmedLine}`
-            // Return it as a proxied URL
-            return `/api/stream-proxy?url=${encodeURIComponent(fullUrl)}`
+            // Return it as a proxied URL with original headers/host params
+            let proxyUrl = `/api/stream-proxy?url=${encodeURIComponent(fullUrl)}`
+            if (headersParam) proxyUrl += `&headers=${encodeURIComponent(headersParam)}`
+            if (hostParam) proxyUrl += `&host=${encodeURIComponent(hostParam)}`
+            return proxyUrl
           }
 
           // If it's already a full URL, proxy it
-          return `/api/stream-proxy?url=${encodeURIComponent(trimmedLine)}`
+          let proxyUrl = `/api/stream-proxy?url=${encodeURIComponent(trimmedLine)}`
+          if (headersParam) proxyUrl += `&headers=${encodeURIComponent(headersParam)}`
+          if (hostParam) proxyUrl += `&host=${encodeURIComponent(hostParam)}`
+          return proxyUrl
         })
 
         const modifiedContent = modifiedLines.join("\n")
