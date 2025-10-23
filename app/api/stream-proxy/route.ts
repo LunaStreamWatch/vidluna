@@ -22,30 +22,27 @@ export async function GET(request: NextRequest) {
        const hostParam = urlObj.searchParams.get('host')
        let additionalHeaders: Record<string, string> = {}
 
-       // Skip parsing headers for storm.vodvidl.site URLs as they expect headers as query params
-       if (!url.includes('storm.vodvidl.site')) {
-         if (headersParam) {
-           try {
-             additionalHeaders = JSON.parse(decodeURIComponent(headersParam))
-           } catch (e) {
-             console.warn('Failed to parse headers param:', e)
-           }
+       if (headersParam) {
+         try {
+           additionalHeaders = { ...additionalHeaders, ...JSON.parse(decodeURIComponent(headersParam)) }
+         } catch (e) {
+           console.warn('Failed to parse headers param:', e)
          }
-
-         if (hostParam) {
-           // Extract hostname from URL if it's a full URL
-           try {
-             const hostUrl = new URL(hostParam)
-             additionalHeaders['Host'] = hostUrl.hostname
-           } catch {
-             additionalHeaders['Host'] = hostParam
-           }
-         }
-
-         // Remove headers and host params from the URL for fetching
-         urlObj.searchParams.delete('headers')
-         urlObj.searchParams.delete('host')
        }
+
+       if (hostParam) {
+         // Extract hostname from URL if it's a full URL
+         try {
+           const hostUrl = new URL(hostParam)
+           additionalHeaders['Host'] = hostUrl.hostname
+         } catch {
+           additionalHeaders['Host'] = hostParam
+         }
+       }
+
+       // Remove headers and host params from the URL for fetching
+       urlObj.searchParams.delete('headers')
+       urlObj.searchParams.delete('host')
        const cleanUrl = urlObj.toString()
 
       const response = await fetch(cleanUrl, {
