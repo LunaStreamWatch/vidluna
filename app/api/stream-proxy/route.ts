@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
   const episode = searchParams.get("episode")
   const server = searchParams.get("server") || "ven"
 
+  const clientOrigin = request.headers.get('origin') || request.headers.get('referer') || 'https://videostr.net'
+
   // If URL is provided, handle proxying (legacy support)
   if (url) {
     try {
@@ -55,8 +57,8 @@ export async function GET(request: NextRequest) {
           "Accept-Language": "en-US,en;q=0.9",
           "Cache-Control": "no-cache",
           "Pragma": "no-cache",
-          "Referer": "https://videostr.net/",
-          "Origin": "https://videostr.net",
+          "Referer": clientOrigin,
+          "Origin": clientOrigin,
           ...additionalHeaders,
         },
       })
@@ -194,6 +196,8 @@ export async function GET(request: NextRequest) {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
           "Accept": "application/json",
+          "Referer": clientOrigin,
+          "Origin": clientOrigin,
         },
       }) as Response
 
